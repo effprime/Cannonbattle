@@ -54,13 +54,12 @@ func Run() error {
 }
 
 type Game struct {
-	Pool ImagePool
+	Pool ComponentPool
 }
 
-type ImagePool struct {
+type ComponentPool struct {
 	Cannon     *Cannon
 	Enemy      *Enemy
-	Shot       *ebiten.Image
 	PathMarker *ebiten.Image
 	Background *ebiten.Image
 }
@@ -83,10 +82,11 @@ func NewGame() (*Game, error) {
 	pathMarker.Fill(color.RGBA{R: 255, A: 255})
 
 	cannon := &Cannon{
-		Speed:  150,
-		Length: 200,
-		Width:  50,
-		Angle:  0.78,
+		ShotImg: shot,
+		Speed:   150,
+		Length:  200,
+		Width:   50,
+		Angle:   0.78,
 	}
 	cannon.CreateImage()
 
@@ -96,10 +96,9 @@ func NewGame() (*Game, error) {
 	}
 
 	return &Game{
-		Pool: ImagePool{
+		Pool: ComponentPool{
 			Background: bg,
 			Cannon:     cannon,
-			Shot:       shot,
 			PathMarker: pathMarker,
 			Enemy:      enemy,
 		},
@@ -133,7 +132,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	dt := 1.0 / ebiten.ActualTPS()
 	remainingShots := []Shot{}
 	for idx, s := range g.Pool.Cannon.Shots {
-		screen.DrawImage(g.Pool.Shot, s.DrawOptions())
+		screen.DrawImage(g.Pool.Cannon.ShotImg, s.DrawOptions())
 		for _, p := range s.Path {
 			pathMarkerOpts := &ebiten.DrawImageOptions{}
 			pathMarkerOpts.GeoM.Translate(p.X, p.Y)

@@ -8,12 +8,13 @@ import (
 )
 
 type Cannon struct {
-	Image  *ebiten.Image
-	Length int
-	Width  int
-	Angle  float64
-	Speed  float64
-	Shots  []Shot
+	ShotImg *ebiten.Image
+	Image   *ebiten.Image
+	Length  int
+	Width   int
+	Angle   float64
+	Speed   float64
+	Shots   []Shot
 }
 
 func (c *Cannon) CreateImage() {
