@@ -1,9 +1,9 @@
 package main
 
-import "github.com/effprime/cannonbattle/pkg/cannonbattle"
+import "github.com/effprime/cannonbattle/pkg/game"
 
 func main() {
-	err := cannonbattle.Run()
+	err := game.Run()
 	if err != nil {
 		panic(err)
 	}
