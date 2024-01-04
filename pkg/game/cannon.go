@@ -63,10 +63,15 @@ func (c *Cannon) Update(g *Game) error {
 		c.Fire()
 	}
 
+	enemyComponent, err := g.Components.GetComponent(ComponentNameEnemy)
+	if err != nil && err != ErrComponentNotFound {
+		return err
+	}
+	enemy, enemyLoaded := enemyComponent.(*Enemy)
 	dt := 1.0 / ebiten.ActualTPS()
 	remainingShots := []Shot{}
 	for idx, s := range c.shots {
-		s.Update(dt)
+		s.Update(g, dt)
 		if s.Elapsed > PPS {
 			s.AddPathMarker()
 			s.Elapsed = 0
@@ -74,7 +79,9 @@ func (c *Cannon) Update(g *Game) error {
 		} else {
 			s.Elapsed += dt
 		}
-		if s.Pos.Y <= 0.8*float64(GameHeight) {
+		if enemyLoaded && enemy.InHitbox(s.Pos) {
+			enemy.TakeDamage(100)
+		} else if s.Pos.Y <= 0.8*float64(GameHeight) {
 			remainingShots = append(remainingShots, s)
 		}
 	}
@@ -119,7 +126,7 @@ type Shot struct {
 	Path    []Position
 }
 
-func (s *Shot) Update(dt float64) {
+func (s *Shot) Update(g *Game, dt float64) {
 	s.VelY = s.VelY + Gravity*dt
 	s.Pos.X = s.Pos.X + s.Speed*math.Cos(s.Angle)*dt
 	s.Pos.Y = s.Pos.Y + s.VelY*dt

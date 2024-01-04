@@ -1,6 +1,15 @@
 package game
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
+var (
+	ErrComponentNotFound = errors.New("component not found in component state")
+)
 
 type Component interface {
 	Name() string
@@ -48,4 +57,12 @@ func (s *ComponentState) DrawAll(screen *ebiten.Image) {
 		}
 		component.Draw(screen)
 	}
+}
+
+func (s *ComponentState) GetComponent(name string) (Component, error) {
+	c, ok := s.components[name]
+	if !ok {
+		return nil, fmt.Errorf("component %s not found", name)
+	}
+	return c, nil
 }

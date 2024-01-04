@@ -68,6 +68,12 @@ func New() (*Game, error) {
 	})
 	state.RegisterComponent(cannon)
 
+	enemy, err := NewEnemy("../../assets/enemy.png")
+	if err != nil {
+		return nil, err
+	}
+	state.RegisterComponent(enemy)
+
 	return &Game{
 		Components: state,
 	}, nil

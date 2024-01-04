@@ -1,63 +1,107 @@
 package game
 
-// // const (
-// // 	EnemyHitPointsDefault = 50
-// // )
+import (
+	"math"
+	"time"
 
-// // func NewEnemy(path string) (*Enemy, error) {
-// // 	img, err := util.TransparentImageFromPath(path)
-// // 	if err != nil {
-// // 		return nil, err
-// // 	}
+	"github.com/effprime/cannonbattle/pkg/util"
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
-// // 	enemy := &Enemy{
-// // 		Image: img,
-// // 		Scale: 0.7,
-// // 		Health: Hitpoints{
-// // 			Current: EnemyHitPointsDefault,
-// // 			Max:     EnemyHitPointsDefault,
-// // 		},
-// // 	}
-// // 	enemy.NewPosition()
-// // 	return enemy, nil
-// // }
+const (
+	ComponentNameEnemy    = "enemy"
+	EnemyHitPointsDefault = 1000
+)
 
-// // type Enemy struct {
-// // 	Health   Hitpoints
-// // 	Image    *ebiten.Image
-// // 	Position Position
-// // 	Scale    float64
-// // }
+type Enemy struct {
+	health    Hitpoints
+	healthBar *HealthBar
+	img       *ebiten.Image
+	pos       Position
+	scale     float64
+	lastMoved time.Time
+}
 
-// // type Hitpoints struct {
-// // 	Current int
-// // 	Max     int
-// // }
+func NewEnemy(path string) (*Enemy, error) {
+	img, err := util.TransparentImageFromPath(path)
+	if err != nil {
+		return nil, err
+	}
 
-// // func (e *Enemy) NewPosition() {
-// // 	midpoint := Width / 2.0
-// // 	min := int(EnemySpawnShiftPercent / 100.0 * midpoint)
-// // 	max := int(((EnemySpawnShiftPercent / 100.0) + 1.0) * midpoint)
-// // 	e.Position = Position{
-// // 		X: float64(util.RandomRangeInt(min, max)),
-// // 		Y: 0.8*Height - e.Scale*float64(e.Image.Bounds().Dy()),
-// // 	}
-// // }
+	health := Hitpoints{
+		Current: EnemyHitPointsDefault,
+		Max:     EnemyHitPointsDefault,
+	}
+	healthBar := NewHealthBar(&HealthBarOptions{
+		Total: health.Max,
+		Width: (70 * img.Bounds().Dx()) / 100,
+	})
 
-// // func (e *Enemy) InHitbox(p Position) bool {
-// // 	centerX := e.Position.X
-// // 	centerY := e.Position.Y + e.Scale*float64(e.Image.Bounds().Dy())/2
-// // 	radius := e.Scale * float64(e.Image.Bounds().Dy()) / 2
-// // 	distance := math.Sqrt(math.Pow(centerX-p.X, 2) + math.Pow(centerY-p.Y, 2))
-// // 	return distance <= radius
-// // }
+	enemy := &Enemy{
+		img:       img,
+		scale:     0.7,
+		health:    health,
+		healthBar: healthBar,
+	}
 
-// // func (e *Enemy) TakeDamage(amount int) {
-// // 	if e.Health.Current == 0 {
-// // 		return
-// // 	}
-// // 	if amount >= e.Health.Current {
-// // 		amount = e.Health.Current
-// // 	}
-// // 	e.Health.Current = e.Health.Current - amount
-// // }
+	enemy.NewPosition()
+	enemy.healthBar.SetPosition(enemy.pos)
+
+	return enemy, nil
+}
+
+func (e *Enemy) Name() string {
+	return ComponentNameEnemy
+}
+
+func (e *Enemy) Update(g *Game) error {
+	if time.Since(e.lastMoved) > 5*time.Second {
+		e.NewPosition()
+	}
+	return nil
+}
+
+func (e *Enemy) Draw(screen *ebiten.Image) {
+	enemyOpts := &ebiten.DrawImageOptions{}
+	enemyOpts.GeoM.Scale(e.scale, e.scale)
+	enemyOpts.GeoM.Translate(e.pos.X, e.pos.Y)
+
+	screen.DrawImage(e.img, enemyOpts)
+	e.healthBar.Draw(screen)
+}
+
+func (e *Enemy) NewPosition() {
+	midpoint := GameWidth / 2.0
+	min := int(EnemySpawnShiftPercent / 100.0 * midpoint)
+	max := int(((EnemySpawnShiftPercent / 100.0) + 1.0) * midpoint)
+	e.pos = Position{
+		X: float64(util.RandomRangeInt(min, max)),
+		Y: 0.8*GameHeight - e.scale*float64(e.img.Bounds().Dy()),
+	}
+	e.lastMoved = time.Now()
+	e.healthBar.SetPosition(e.pos)
+}
+
+func (e *Enemy) InHitbox(p Position) bool {
+	centerX := e.pos.X
+	centerY := e.pos.Y + e.scale*float64(e.img.Bounds().Dy())/2
+	radius := e.scale * float64(e.img.Bounds().Dy()) / 2
+	distance := math.Sqrt(math.Pow(centerX-p.X, 2) + math.Pow(centerY-p.Y, 2))
+	return distance <= radius
+}
+
+func (e *Enemy) TakeDamage(amount int) {
+	if e.health.Current == 0 {
+		return
+	}
+	if amount >= e.health.Current {
+		amount = e.health.Current
+	}
+	e.health.Current = e.health.Current - amount
+	e.healthBar.Subtract(amount)
+}
+
+type Hitpoints struct {
+	Current int
+	Max     int
+}
